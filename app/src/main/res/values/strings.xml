@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">FullDuplex</string>
+    <string name="title_activity_async_listen">Wifi Door Locker</string>
+    <string name="door_locker_status">Door Locker Status</string>
+    <string name="title_activity_navigation_drawer">NavigationDrawerActivity</string>
+    <string name="title_activity_lock_management">Locks</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="com.app.wifilock.paired_device_info">Close navigation drawer</string>
+    <string name="unlock_locked">Slide to accept</string>
+    <string name="unlock_unlocked">Slide to reject</string>
+    <string name="unlock_instructions">Slide to unlock</string>
+    <string name="unlock_thumb">Unlock thumb</string>
+    <string name="action_settings">Settings</string>
+    <string name="voice_prompt">Choose an Audio Message</string>
+    <string-array name="voice_array">
+        <item>Please wait...</item>
+        <item>Nobody responding..</item>
+        <item>Thank you..</item>
+        <item>Not at Home..</item>
+    </string-array>
+    <string-array name="voice_array_file_name">
+        <item>please_wait</item>
+        <item>nobody_responding</item>
+        <item>thank_you</item>
+        <item>not_at_home</item>
+    </string-array>
+</resources>

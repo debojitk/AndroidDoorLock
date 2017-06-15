@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="fill_parent"
+    android:background="#464646"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:baselineAligned="false"
+    android:gravity="bottom">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/nav_bar"
+        android:gravity="bottom">
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="88dp"
+            android:layout_height="88dp"
+            android:paddingTop="@dimen/nav_header_vertical_spacing"
+            android:src="@drawable/electronic_lock"
+            android:maxHeight="100dp"
+            android:maxWidth="100dp"
+            android:longClickable="false"
+            android:layout_marginTop="0dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="NexGenLock"
+            android:textSize="20dp"
+            android:textStyle="bold"
+            android:textColor="#474747" />
+
+        <TextView
+            android:id="@+id/callingDoor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Smart Lock for Smart People"
+            android:layout_weight="0"
+            android:gravity="bottom"
+            android:textStyle="bold"
+            android:singleLine="false"
+            android:textColor="#dfdddd" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="fill_parent"></LinearLayout>
+
+</LinearLayout>

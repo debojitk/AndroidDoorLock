@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="Settings" />
+        <item
+            android:id="@+id/nav_status"
+            android:icon="@drawable/ic_tap_and_play_black_24dp"
+            android:title="Status" />
+        <item
+            android:id="@+id/nav_recorder"
+            android:icon="@drawable/ic_mic_black_24dp"
+            android:title="Recorder" />
+        <item
+            android:id="@+id/nav_history"
+            android:icon="@drawable/ic_insert_chart_black_24dp"
+            android:title="History" />
+        <item
+            android:id="@+id/nav_locks"
+            android:icon="@drawable/lock"
+            android:title="Locks" />
+    </group>
+
+    <item android:title="Communicate">
+        <menu>
+            <item
+                android:id="@+id/nav_share"
+                android:icon="@drawable/ic_menu_share"
+                android:title="Share" />
+            <item
+                android:id="@+id/nav_send"
+                android:icon="@drawable/ic_menu_send"
+                android:title="Send" />
+        </menu>
+    </item>
+
+</menu>

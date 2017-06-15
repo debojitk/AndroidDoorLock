@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<LinearLayout xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/rltvlLockManagement"
+
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="center_vertical"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:paddingLeft="21dp">
+
+        <TextView
+            android:id="@+id/textViewAvailableLockName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView"
+            android:layout_alignParentLeft="true"
+
+            android:gravity="center_vertical"
+            android:layout_weight="1"
+            android:paddingLeft="2dp" />
+
+        <TextView
+            android:text="192.168.1.11"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/textViewAvailableDevicesIP"
+            android:layout_weight="1"
+            android:textSize="10sp"
+            android:paddingLeft="2dp" />
+    </LinearLayout>
+
+    <ImageView
+        android:layout_width="24dp"
+        app:srcCompat="@drawable/link_icon"
+        android:id="@+id/imageViewPair"
+        android:layout_weight=".1"
+        android:tint="#3b3b3b"
+        android:layout_height="32dp" />
+
+</LinearLayout>

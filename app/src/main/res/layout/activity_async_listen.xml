@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.test.arduinosocket.activity.AsyncListenActivity">
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/address"
+        android:editable="false"
+        android:text="Not Connected yet"
+        android:layout_alignEnd="@+id/connect"
+        android:layout_toEndOf="@+id/callingDoor" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Connect"
+        android:id="@+id/connect"
+        android:layout_alignRight="@+id/playAudio"
+        android:layout_alignEnd="@+id/playAudio"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/address" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Disconnect"
+        android:id="@+id/closeSocket"
+        android:layout_below="@+id/connect"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignRight="@+id/playAudio"
+        android:layout_alignEnd="@+id/playAudio" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="SAY HELLO"
+        android:id="@+id/playAudio"
+        android:layout_below="@+id/closeSocket"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Open Door"
+        android:id="@+id/buttonOpenDoor"
+        android:layout_below="@+id/playAudio"
+        android:layout_alignRight="@+id/playAudio"
+        android:layout_alignEnd="@+id/playAudio"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Close Door"
+        android:id="@+id/buttonCloseDoor"
+        android:layout_below="@+id/buttonOpenDoor"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Server Address:  "
+        android:id="@+id/callingDoor"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignBottom="@+id/address"
+        android:gravity="center_vertical|right"
+        />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start Service"
+        android:id="@+id/startService"
+        android:layout_below="@+id/buttonCloseDoor"
+        android:layout_alignParentStart="true"
+        android:layout_alignEnd="@+id/address" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Stop Service"
+        android:id="@+id/stopService"
+        android:layout_below="@+id/startService"
+        android:layout_alignParentStart="true"
+        android:layout_alignEnd="@+id/address" />
+
+</RelativeLayout>

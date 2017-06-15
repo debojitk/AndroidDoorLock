@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="0dp"
+    android:paddingLeft="0dp"
+    android:paddingRight="0dp"
+    android:paddingTop="0dp"
+    tools:context="com.test.arduinosocket.activity.LockManagementActivity"
+    android:orientation="vertical"
+    android:background="#ffffff">
+
+
+    <TextView
+        android:text="Paired Devices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView13"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:padding="5dp"
+        android:background="@color/Header_bg" />
+
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/lvwLocks"
+        android:paddingLeft="5dp"
+        android:layout_weight="1"
+        android:paddingRight="0dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:drawSelectorOnTop="true">
+    </ListView>
+
+    <TextView
+        android:text="Available Devices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView14"
+        android:paddingBottom="5dp"
+        android:paddingTop="5dp"
+        android:padding="5dp"
+        android:background="@color/Header_bg" />
+
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/lvwOtherLocks"
+        android:paddingLeft="5dp"
+        android:layout_weight="1"
+        android:paddingRight="0dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp">
+    </ListView>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="bottom|center_horizontal"
+        android:layout_gravity="bottom"
+        tools:gravity="bottom|center_horizontal"
+        android:paddingBottom="5dp"
+        android:paddingTop="5dp">
+
+        <Button
+            android:text="Search"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/btnRefreshList"
+            android:textAllCaps="false"
+            android:background="@color/Header_bg"
+            android:textColor="@color/Text_color"
+            android:minHeight="30dp" />
+    </LinearLayout>
+
+</LinearLayout>

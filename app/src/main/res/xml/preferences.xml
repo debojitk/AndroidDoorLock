@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference android:title="Device Wifi SSID"
+        android:key="deviceWifiSsid"
+        android:summary="Please provide device wifi SSID"
+        android:defaultValue="ESPAP">
+    </EditTextPreference>
+    <ListPreference android:title="Device Wifi Mode"
+        android:summary="Select the Wifi mode"
+        android:key="wifiNetworkMode"
+        android:defaultValue="softap"
+        android:entries="@array/listArrayWifiModes"
+        android:entryValues="@array/listValuesWifiModes" />
+
+    <CheckBoxPreference android:title="Start server on Wifi enabled"
+        android:defaultValue="true"
+        android:summary="This option if selected will start the service as soon as Wifi is active."
+        android:key="serverEnabledOnWifiEnabled" />
+    <ListPreference android:title="Wifi Network"
+        android:summary="Select the Wifi network"
+        android:key="wifiNetwork"
+        android:defaultValue="test-ssid"
+        android:entries="@array/listArray"
+        android:entryValues="@array/listValues" />
+    <EditTextPreference android:title="Wifi Password"
+        android:key="wifiPassword"
+        android:summary="Please provide password for the selected Wifi"></EditTextPreference>
+    <CheckBoxPreference android:title="Enable Not at Home"
+        android:key="notAtHome"
+        android:defaultValue="false"
+        android:summary="Select to enable not at home feature"></CheckBoxPreference>
+    <EditTextPreference android:title="Record file Size"
+        android:key="maxRecLen"
+        android:defaultValue="200"
+        android:summary="Size of recorded Messages in Kbytes"></EditTextPreference>
+
+</PreferenceScreen>
