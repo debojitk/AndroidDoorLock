@@ -141,7 +141,7 @@ public class UDPBroadcastCommandProcessor implements Runnable {
             if (wifiTurnedOn) {
                 while ((System.currentTimeMillis() <= startTime + timeout) && running) {
                     //1. broadcasting presence
-                    byte[] sendData = (new CommandData().setCommand(Constants.UDP_CONN_BC_REQUEST)
+                    byte[] sendData = (new CommandData().setCommand(Constants.UDP_CONNECT_BC_REQUEST)
                             .setDeviceId(this.deviceManager.getPhoneId())
                             .setDeviceKey(this.deviceManager.getPhoneKey()).buildCommandString()).getBytes();
 
@@ -238,24 +238,24 @@ public class UDPBroadcastCommandProcessor implements Runnable {
              *      phone receives new web socket connection request
              *      Connection gets established.
              */
-            if (commandData.getCommand().equals(Constants.UDP_CONN_BC_REQUEST)) {
+            if (commandData.getCommand().equals(Constants.UDP_CONNECT_BC_REQUEST)) {
                 //message initiated from device
                 if (this.deviceManager.checkPairedDevice(commandData.getDeviceId(), commandData.getDeviceKey())) {
                     //device is paired, so it can be connected, send the success response
                     Utils.showMessage("Incoming Request. Connected to " + remoteSocket + " from this IP: " + myIp);
-                    responseMessage = new CommandData().setCommand(Constants.UDP_CONN_BC_RESPONSE)
+                    responseMessage = new CommandData().setCommand(Constants.UDP_CONNECT_BC_RESPONSE)
                             .setDeviceId(this.deviceManager.getPhoneId())
                             .setDeviceKey(this.deviceManager.getPhoneKey()).buildCommandString();
 
                     //add a new device
                     this.deviceManager.addToConnectingDeviceList(new Device(commandData.getDeviceId(), commandData.getDeviceKey(), packet.getAddress(), packet.getPort()));
                 }
-            } else if (commandData.getCommand().equals(Constants.UDP_CONN_BC_RESPONSE)) {
+            } else if (commandData.getCommand().equals(Constants.UDP_CONNECT_BC_RESPONSE)) {
                 //message initiated from phone
                 Utils.showMessage("Connected to " + remoteSocket);
                 if (this.deviceManager.checkPairedDevice(commandData.getDeviceId(), commandData.getDeviceKey())) {
                     //add a new device if already  not added
-                    responseMessage = new CommandData().setCommand(Constants.UDP_CONN_BC_RESPONSE)
+                    responseMessage = new CommandData().setCommand(Constants.UDP_CONNECT_BC_RESPONSE)
                             .setDeviceId(this.deviceManager.getPhoneId())
                             .setDeviceKey(this.deviceManager.getPhoneKey())
                             .setData(commandData.getDeviceId())
@@ -266,7 +266,7 @@ public class UDPBroadcastCommandProcessor implements Runnable {
                     this.deviceManager.addToConnectingDeviceList(new Device(commandData.getDeviceId(),
                             commandData.getDeviceKey(), packet.getAddress(), packet.getPort()));
                 } else {
-                    responseMessage = new CommandData().setCommand(Constants.UDP_CONN_BC_RESPONSE)
+                    responseMessage = new CommandData().setCommand(Constants.UDP_CONNECT_BC_RESPONSE)
                             .setDeviceId(this.deviceManager.getPhoneId())
                             .setDeviceKey(this.deviceManager.getPhoneKey())
                             .setResponse(true)
@@ -349,11 +349,6 @@ public class UDPBroadcastCommandProcessor implements Runnable {
                             }
                         });
                         //sending acceptance response
-                        responseMessage = Constants.UDP_PAIR_BROADCAST_ACCEPT + Constants.COLON +
-                                Constants.ACK + Constants.COLON +
-                                commandData.getDeviceKey() + Constants.COLON +
-                                this.deviceManager.getPhoneId() + Constants.COLON +
-                                this.deviceManager.getPhoneKey();
                         responseMessage = new CommandData().setCommand(Constants.UDP_PAIR_BROADCAST_ACCEPT)
                                 .setDeviceId(deviceManager.getPhoneId())
                                 .setDeviceKey(deviceManager.getPhoneKey())

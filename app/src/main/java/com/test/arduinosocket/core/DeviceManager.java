@@ -273,7 +273,7 @@ public class DeviceManager implements Runnable{
     public void setCurrentDevice(Device device){
         this.currentDevice=device;
         Intent intent = new Intent(Constants.LOCAL_BC_EVENT_ACTIVE_DEVICE_CHANGED);
-        intent.putExtra(Constants.INTENT_DEVICE_ID, device!=null?device:null);
+        intent.putExtra(Constants.INTENT_DEVICE_ID, device!=null?device.getDeviceId():null);
         LocalBroadcastManager.getInstance(this.context).sendBroadcast(intent);
 
     }

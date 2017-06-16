@@ -5,8 +5,8 @@ package com.test.arduinosocket.common;
  */
 public class Constants {
     public static String UDP_CONNECT_BROADCAST="UDP_CONNECT_BROADCAST";
-    public static String UDP_CONN_BC_REQUEST="UDP_CONN_BC_REQUEST";
-    public static String UDP_CONN_BC_RESPONSE="UDP_CONN_BC_RESPONSE";
+    public static String UDP_CONNECT_BC_REQUEST="UDP_CONNECT_BC_REQUEST";
+    public static String UDP_CONNECT_BC_RESPONSE="UDP_CONNECT_BC_RESPONSE";
     public static String UDP_PAIR_BROADCAST="UDP_PAIR_BROADCAST";
     public static String UDP_PAIR_BROADCAST_ACCEPT="UDP_PAIR_BROADCAST_ACCEPT";
     public static String UDP_PAIR_BROADCAST_REJECT="UDP_PAIR_BROADCAST_REJECT";
