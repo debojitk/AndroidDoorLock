@@ -123,6 +123,10 @@ public class DeviceManager implements Runnable{
         SharedPreferences.Editor editor=storedDeviceMap.edit();
         editor.remove(device.getDeviceId());
         editor.commit();
+        Device connDevice=getDevice(device.getDeviceId());
+        if(connDevice!=null){
+            removeDevice(connDevice);
+        }
     }
 
     public Device getPairedDevice(String deviceId){
@@ -210,7 +214,7 @@ public class DeviceManager implements Runnable{
         if(device!=null) {
             String key = device.getDeviceId();
             device = deviceMap.remove(key);
-            if(device.getWebSocketConnection()!=null && !device.getWebSocketConnection().isClosed()){
+            if(device!=null && device.getWebSocketConnection()!=null && !device.getWebSocketConnection().isClosed()){
                 device.getWebSocketConnection().close();
             }
             if (deviceMap.isEmpty()) {
@@ -322,7 +326,7 @@ public class DeviceManager implements Runnable{
                 connDevice.getDevice().setWebSocketConnection(webSocket);
                 retVal= true;
             }else{
-                connDevice.rejectConnection();
+                //connDevice.rejectConnection();
                 retVal= false;
             }
         }
@@ -331,6 +335,7 @@ public class DeviceManager implements Runnable{
 
     public void addToConnectingDeviceList(Device device){
         if(!tempConnectingDeviceMap.containsKey(device.getDeviceId())) {
+            Log.d(Constants.LOG_TAG_MESSAGE, "Added to temp connecting device: "+device.getDeviceId());
             ConnectingDevice connectingDevice = new ConnectingDevice(device);
             connectingDevice.startTimeoutThread(60000);
             tempConnectingDeviceMap.put(device.getDeviceId(), connectingDevice);
@@ -423,6 +428,8 @@ public class DeviceManager implements Runnable{
                             try {
                                 if (commandHolder.getResponseHandler() != null) {
                                     commandHolder.getResponseHandler().handleResponse(commandData, matchDevice);
+                                }else{
+                                    Utils.showMessage(commandData.getData());
                                 }
                             } catch (Exception ex) {
                                 ex.printStackTrace();

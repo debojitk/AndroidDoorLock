@@ -218,9 +218,9 @@ public class UDPBroadcastCommandProcessor implements Runnable {
             //See if the packet holds the right command (message)
             String responseMessage = null;
             String requestMessage = new String(packet.getData()).trim();
-            CommandData commandData = new CommandData(requestMessage);
             Log.d("MSG", "message is: " + requestMessage);
-            Utils.showMessage("Received message:" + requestMessage);
+            CommandData commandData = new CommandData(requestMessage);
+            //Utils.showMessage("Received message:" + requestMessage);
             //setRemoteSocket(new InetSocketAddress (((InetSocketAddress)packet.getSocketAddress()).getAddress(),((InetSocketAddress)packet.getSocketAddress()).getPort()));
             /**
              * Connection handling
@@ -335,11 +335,9 @@ public class UDPBroadcastCommandProcessor implements Runnable {
                         //remove from temp list
                         final Device tempPairingDevice = deviceManager.getTempPairingDeviceMap().remove(commandData.getDeviceId());
                         tempPairingDevice.setDeviceKey(commandData.getDeviceKey());
-                        deviceManager.addDevice(tempPairingDevice);//adds to live device list
                         deviceManager.persistNewlyAddedDevice(tempPairingDevice);
-                        if (deviceManager.getCurrentDevice() == null || deviceManager.getLiveDeviceCount() == 1) {
-                            deviceManager.setCurrentDevice(tempPairingDevice);
-                        }
+                        this.deviceManager.addToConnectingDeviceList(new Device(commandData.getDeviceId(),
+                                commandData.getDeviceKey(), packet.getAddress(), packet.getPort()));
                         //update views
                         lockManagementActivity.runOnUiThread(new Runnable() {
                             @Override
@@ -356,7 +354,14 @@ public class UDPBroadcastCommandProcessor implements Runnable {
                                 .setError(false)
                                 .setData(commandData.getDeviceKey())
                                 .buildCommandString();
+                        if (responseMessage != null) {
+                            DatagramPacket sendPacket = new DatagramPacket(responseMessage.getBytes(), responseMessage.length(), packet.getAddress(), packet.getPort());
+                            socket.send(sendPacket);
+                            System.out.println("Sent packet to: " + sendPacket.getAddress().getHostAddress() + ":" + sendPacket.getPort());
+                        }
+
                         Utils.showMessage("New device paired successfully...");
+
                     }
                 } else if (commandData.getCommand().equalsIgnoreCase(Constants.UDP_PAIR_BROADCAST_REJECT)) {
                     Utils.showMessage("Pairing failed for device: " + commandData.getDeviceId() + ". Error is: " + commandData.getData());

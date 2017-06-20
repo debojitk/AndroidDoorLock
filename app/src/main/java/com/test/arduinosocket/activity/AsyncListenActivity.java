@@ -327,16 +327,18 @@ public class AsyncListenActivity extends AppCompatActivity
     }
 
     public void updateDisplayState(){
-        Device device=deviceManager.getCurrentDevice();
-        if(device!=null){
-            setAllButtonsState(true);
-            setServerInfo(device.getDeviceId()+"-"+device.getDeviceIp()+":"+device.getDevicePort());
-        }else{
-            setAllButtonsState(false);
-            setServerInfo("No locks connected.");
+        if(deviceManager!=null) {
+            Device device = deviceManager.getCurrentDevice();
+            if (device != null) {
+                setAllButtonsState(true);
+                setServerInfo(device.getDeviceId() + "-" + device.getDeviceIp() + ":" + device.getDevicePort());
+            } else {
+                setAllButtonsState(false);
+                setServerInfo("No locks connected.");
+            }
+            setSSID(deviceManager.getSSid());
+            setServerAddress(deviceManager.getIP());
         }
-        setSSID(deviceManager.getSSid());
-        setServerAddress(deviceManager.getIP());
     }
 
     public synchronized void setAllButtonsState(final boolean enable) {

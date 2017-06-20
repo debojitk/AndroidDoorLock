@@ -7,7 +7,7 @@
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="com.app.wifilock.paired_device_info">Close navigation drawer</string>
+    <string name="com.app.wifilock.paired_device_info">paired_device_info</string>
     <string name="unlock_locked">Slide to accept</string>
     <string name="unlock_unlocked">Slide to reject</string>
     <string name="unlock_instructions">Slide to unlock</string>
