@@ -1,18 +1,20 @@
 package com.test.arduinosocket.activity.adapters;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RadioButton;
-import android.widget.TableLayout;
 import android.widget.TextView;
 
 import com.test.arduinosocket.R;
@@ -61,7 +63,7 @@ public class PairedDeviceListAdapter  extends ArrayAdapter<Device> {
             @Override
             public void onClick(View view) {
                 selectedPosition = (Integer)view.getTag();
-                deviceManager.setCurrentDevice(deviceManager.getDevice(mainText.getText().toString()));
+                deviceManager.setCurrentDevice(deviceManager.getDevice(getItem(selectedPosition).getDeviceId()));
                 notifyDataSetChanged();
 
             }
@@ -75,6 +77,7 @@ public class PairedDeviceListAdapter  extends ArrayAdapter<Device> {
             }
         });
 
+        LinearLayout layoutRowSelector=(LinearLayout)view.findViewById(R.id.layoutRowSelector);
         Device device=deviceManager.getDevice(values.get(position).getDeviceId());
         if(device!=null){
             LinearLayout layout=(LinearLayout)view.findViewById(R.id.layoutDeviceStatus);
@@ -87,6 +90,14 @@ public class PairedDeviceListAdapter  extends ArrayAdapter<Device> {
             }else{
                 radioButton.setChecked(false);
             }
+            if(device.getDeviceType().equalsIgnoreCase(Constants.DEVICE_TYPE_LOCK)){
+                radioButton.setEnabled(false);
+                radioButton.setChecked(false);
+                layoutRowSelector.setEnabled(false);
+                mainText.append(" (" + Constants.DEVICE_TYPE_LOCK + ")");
+            }else if(device.getDeviceType().equalsIgnoreCase(Constants.DEVICE_TYPE_COMM)){
+                mainText.append(" (" + Constants.DEVICE_TYPE_COMM + ")");
+            }
         }else{
             LinearLayout layout=(LinearLayout)view.findViewById(R.id.layoutDeviceStatus);
             layout.setBackgroundColor(Color.DKGRAY);
@@ -95,7 +106,18 @@ public class PairedDeviceListAdapter  extends ArrayAdapter<Device> {
             radioButton.setEnabled(false);
             radioButton.setChecked(false);
         }
-        radioButton.setTag(position);
+        layoutRowSelector.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                if(view.getTag()!=null) {
+                    selectedPosition = (Integer) view.getTag();
+                }
+                notifyDataSetChanged();
+                showPairedDeviceDialog(view, getItem(selectedPosition));
+            }
+        });
+
+
         return view;
     }
     private void showDeleteConfirmDialog(final Device device, final View view) {
@@ -136,6 +158,47 @@ public class PairedDeviceListAdapter  extends ArrayAdapter<Device> {
     private void removeDevice(Device device){
         deviceManager.removeDevice(device);
         deviceManager.removePairedDevice(device);
+    }
+
+    private void showPairedDeviceDialog(final View view, final Device commDevice){
+        try {
+            final Dialog dialog = new Dialog(context);
+            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+            dialog.setContentView(R.layout.dialog_listview_paired_devices);
+            //selecting only lock devices to be shown
+            ArrayList<Device> pairedList = new ArrayList<>();
+            for(Device device:deviceManager.getAllPairedDevices(context).values()){
+                if(device.getDeviceType().equalsIgnoreCase(Constants.DEVICE_TYPE_LOCK)){
+                    pairedList.add(device);
+                }
+            }
+            final PairedLockDeviceListAdapter pairedDeviceListAdapter = new PairedLockDeviceListAdapter(context, pairedList);
+            ListView pairedDeviceListView = (ListView) dialog.findViewById(R.id.lvPairedDevices);
+            Button closeButton = (Button) dialog.findViewById(R.id.closeButton);
+            closeButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    //interlinking comm device and lock device
+                    if(!pairedDeviceListAdapter.isEmpty()) {
+                        Device selectedLockDevice = deviceManager.getDevice(pairedDeviceListAdapter.getItem(pairedDeviceListAdapter.getSelectedPosition()).getDeviceId());
+                        Device selectedCommDevice = deviceManager.getDevice(commDevice.getDeviceId());
+                        if(deviceManager.getDevice(selectedCommDevice.getLinkDevice())!=null){
+                            deviceManager.getDevice(selectedCommDevice.getLinkDevice()).setLinkDevice(null);
+                            deviceManager.persistNewlyAddedDevice(deviceManager.getDevice(selectedCommDevice.getLinkDevice()));
+                        }
+                        selectedCommDevice.setLinkDevice(selectedLockDevice.getDeviceId());
+                        selectedLockDevice.setLinkDevice(selectedCommDevice.getDeviceId());
+                        deviceManager.persistNewlyAddedDevice(selectedCommDevice);
+                        deviceManager.persistNewlyAddedDevice(selectedLockDevice);
+                    }
+                    dialog.dismiss();
+                }
+            });
+            pairedDeviceListView.setAdapter(pairedDeviceListAdapter);
+            dialog.show();
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
     }
 
 }

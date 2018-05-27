@@ -2,7 +2,12 @@ package com.test.arduinosocket.activity.adapters;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,6 +34,20 @@ public class RecordedMessageListAdapter extends ArrayAdapter<String> implements 
     private DeviceManager deviceManager;
     private View currentMessageView;
 
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Get extra data included in the Intent
+            String message = intent.getStringExtra(Constants.LOCAL_BC_EVENT_DATA);
+            String action=intent.getAction();
+            if(Constants.LOCAL_BC_EVENT_PLAYBACK_STOPPED.equals(action)){
+                ((ImageView)currentMessageView).setImageResource(R.drawable.ic_play_circle_outline_black_24dp);
+            }
+            Log.d("receiver", "Got message: " + message);
+        }
+    };
+
+
     public RecordedMessageListAdapter(Activity context,
                                       String[] web) {
         super(context, R.layout.list_single, web);
@@ -47,6 +66,10 @@ public class RecordedMessageListAdapter extends ArrayAdapter<String> implements 
                             ((ImageView)currentMessageView).setImageResource(R.drawable.ic_play_circle_outline_black_24dp);
                         }
                     }.start();
+                    Utils.showMessage("Playback Stopped");
+                    break;
+                case "START_PLAY":
+                    Utils.showMessage("Playback started");
                     break;
                 default:
                     Utils.showMessage("Nothing to do.");
@@ -103,11 +126,14 @@ public class RecordedMessageListAdapter extends ArrayAdapter<String> implements 
                 if(isPlaying){
                     isPlaying=false;
                     ((ImageView)view).setImageResource(R.drawable.ic_play_circle_outline_black_24dp);
+                    LocalBroadcastManager.getInstance(view.getContext()).unregisterReceiver(mMessageReceiver);
                     stopPlay();
                 }else{
                     ((ImageView)view).setImageResource(R.drawable.ic_stop_black_24dp);
                     isPlaying=true;
                     currentMessageView=view;//storing view for future use
+                    IntentFilter intentFilter=new IntentFilter(Constants.LOCAL_BC_EVENT_PLAYBACK_STOPPED);
+                    LocalBroadcastManager.getInstance(view.getContext()).registerReceiver(mMessageReceiver,intentFilter);
                     startPlay(cmdInput);
                 }
 

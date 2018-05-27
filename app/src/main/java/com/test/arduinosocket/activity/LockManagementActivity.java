@@ -3,6 +3,7 @@ package com.test.arduinosocket.activity;
 import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
@@ -12,9 +13,12 @@ import com.test.arduinosocket.MyApplication;
 import com.test.arduinosocket.R;
 import com.test.arduinosocket.activity.adapters.AvailableDeviceListAdapter;
 import com.test.arduinosocket.activity.adapters.PairedDeviceListAdapter;
+import com.test.arduinosocket.common.Constants;
 import com.test.arduinosocket.core.Device;
 import com.test.arduinosocket.core.DeviceManager;
+import com.test.arduinosocket.network.UDPBroadcastCommandProcessor;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 
@@ -32,7 +36,7 @@ public class LockManagementActivity extends AppCompatActivity {
         setContentView(R.layout.activity_lock_management);
         //Initializing the Listview for existing locks
         pairedList = new ArrayList<>();
-        pairedList.addAll(DeviceManager.getInstance().getAllPairedDevices().values());
+        pairedList.addAll(DeviceManager.getInstance().getAllPairedDevices(this).values());
         pairedDeviceListAdapter = new PairedDeviceListAdapter(this, pairedList);
         ListView pairedDeviceListView = (ListView) findViewById(R.id.lvwLocks);
         pairedDeviceListView.setAdapter(pairedDeviceListAdapter);
@@ -50,6 +54,18 @@ public class LockManagementActivity extends AppCompatActivity {
                 DeviceManager.getInstance().getTempPairingDeviceMap().clear();
                 availableList.clear();
                 availableDeviceListAdapter.notifyDataSetChanged();
+                new Thread(){
+                    @Override
+                    public void run() {
+                        try {
+                            UDPBroadcastCommandProcessor.getInstance().searchActiveDevices(10000);
+                        } catch (UnknownHostException e) {
+                            e.printStackTrace();
+                        }catch(Exception ex){
+                            Log.e(Constants.LOG_TAG_MESSAGE, "An error occurred in searchDevices", ex);
+                        }
+                    }
+                }.start();
             }
         });
 

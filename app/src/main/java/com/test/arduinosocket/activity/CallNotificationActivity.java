@@ -13,13 +13,11 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.test.arduinosocket.MyApplication;
 import com.test.arduinosocket.R;
 import com.test.arduinosocket.activity.layouts.UnlockBarLayout;
 import com.test.arduinosocket.common.Constants;
-import com.test.arduinosocket.common.Utils;
 import com.test.arduinosocket.core.CommandData;
 import com.test.arduinosocket.core.DeviceManager;
 
@@ -85,6 +83,7 @@ public class CallNotificationActivity extends Activity {
                 sendNotifyResponse(false);
                 //finish the activity
                 notificationStopThread.interrupt();
+                deviceManager.resetNotificationProcessing();
             }
         });
 
@@ -95,7 +94,7 @@ public class CallNotificationActivity extends Activity {
         LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
                 new IntentFilter(Constants.LOCAL_BC_EVENT_NOTIFICATION));
         MyApplication.setCurrentActivity(this);
-        String intentExtra = getIntent().getStringExtra(Constants.CALL_NOTIFICATION_CLIENT);
+        String intentExtra = getIntent().getStringExtra(Constants.LOCAL_BC_EVENT_DATA);
         commandData=new CommandData(intentExtra);
         super.onStart();
         callingDoor.setText(commandData.getDeviceId()+" is calling");
@@ -144,8 +143,8 @@ public class CallNotificationActivity extends Activity {
     public void sendNotifyResponse(boolean response){
         final CommandData commandData=new CommandData();
         String notifyCommand=commandData.setCommand(Constants.NOTIFY)
-                .setDeviceId(deviceManager.getCurrentDevice().getDeviceId())
-                .setDeviceKey(deviceManager.getCurrentDevice().getDeviceKey())
+                .setDeviceId(deviceManager.getPhoneId())
+                .setDeviceKey(deviceManager.getPhoneKey())
                 .setResponse(true)
                 .setError(!response)
                 .buildCommandString();

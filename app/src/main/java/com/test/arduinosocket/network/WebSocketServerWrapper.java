@@ -72,7 +72,7 @@ public class WebSocketServerWrapper extends WebSocketServer {
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         counter++;
-        System.out.println("Opened connection number" + counter);
+        System.out.println("Opened connection number: " + counter);
         System.out.println("Remote address is: " + conn.getRemoteSocketAddress());
         boolean connected = false;
         if (handshake != null) {
@@ -106,15 +106,11 @@ public class WebSocketServerWrapper extends WebSocketServer {
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        System.out.println("closed");
-        if (conn != null && !conn.isClosed()) {
-            conn.close();
-        }
+        System.out.println("closed due to: "+reason);
         HeartbeatManager manager=connectionMap.get(conn);
         if(manager!=null){
-            deviceManager.removeDevice(manager.getDevice());
+            manager.interrupt();
         }
-        counter--;
     }
 
     @Override
@@ -163,6 +159,7 @@ public class WebSocketServerWrapper extends WebSocketServer {
         private String payload;
         private Thread runnerThread;
         private Device device;
+        private boolean pongReceived=false;
 
         public HeartbeatManager(WebSocket conn, Device device) {
             // TODO Auto-generated constructor stub
@@ -196,6 +193,7 @@ public class WebSocketServerWrapper extends WebSocketServer {
          */
         public void setLastPongTime(long lastPongTime) {
             this.lastPongTime = lastPongTime;
+            pongReceived=true;
         }
 
         /**
@@ -240,6 +238,11 @@ public class WebSocketServerWrapper extends WebSocketServer {
             this.sleepTime = sleepTime;
         }
 
+        public void interrupt(){
+            try {
+                this.runnerThread.interrupt();
+            }catch(Exception ex){}
+        }
         @Override
         public void run() {
             long tempSleepTime = sleepTime;
@@ -247,19 +250,6 @@ public class WebSocketServerWrapper extends WebSocketServer {
             int pongFailCount = 0;
             while (true) {
                 try {
-                    Thread.sleep(tempSleepTime);
-                    currentMillis = System.currentTimeMillis();
-                    if ((currentMillis - lastPongTime) > sleepTime) {
-                        Log.i(Constants.LOG_TAG_SERVICE,"Pong not received for long");
-                        pongFailCount++;
-                        if (pongFailCount > 10) {
-                            Log.i(Constants.LOG_TAG_SERVICE,"All ping failed, it seems device is not available anymore.");
-                            //pongFailCount=0;
-                            break;
-                        }
-                    } else {
-                        pongFailCount = 0;//resetting pongFailCount
-                    }
                     //sending ping
                     FramedataImpl1 resp = new FramedataImpl1();
                     resp.setFin(true);
@@ -267,26 +257,37 @@ public class WebSocketServerWrapper extends WebSocketServer {
                     resp.setPayload(ByteBuffer.wrap(payload.getBytes()));
                     resp.setTransferemasked(false);
                     if (!conn.isClosed()) {
+                        pongReceived=false;
                         conn.sendFrame(resp);
                         System.out.println(payload);
                     } else {
                         break;
                     }
+                    Thread.sleep(tempSleepTime);
+                    if (!pongReceived) {
+                        Log.i(Constants.LOG_TAG_SERVICE,"Pong not received for long  time - " + (currentMillis - lastPongTime));
+                        pongFailCount++;
+                        if (pongFailCount > 2) {
+                            Log.i(Constants.LOG_TAG_SERVICE,"All ping failed, it seems device is not available anymore.");
+                            //pongFailCount=0;
+                            break;
+                        }
+                    } else {
+                        pongFailCount = 0;//resetting pongFailCount
+                    }
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    break;
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     break;
                 }
             }
-            if (conn != null && !conn.isClosed()) {
-                conn.close();
-            }
-            Log.i(Constants.LOG_TAG_SERVICE,"Removing device from device list");
+            Log.i(Constants.LOG_TAG_SERVICE,"Heartbeat manager closing, Removing device from device list");
             connectionMap.remove(conn);
             deviceManager.removeDevice(device);
-
+            counter--;
         }
     }
 }

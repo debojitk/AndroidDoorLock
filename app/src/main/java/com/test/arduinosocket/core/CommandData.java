@@ -11,6 +11,7 @@ public class CommandData {
     private String command;
     private String deviceId;
     private String deviceKey;
+    private String deviceType;
     private String data;
     private String rawData;
     private boolean response;
@@ -89,6 +90,15 @@ public class CommandData {
         this.data = data;
         return this;
     }
+
+    public String getDeviceType() {
+        return deviceType;
+    }
+
+    public void setDeviceType(String deviceType) {
+        this.deviceType = deviceType;
+    }
+
     private void parseCommand(){
         if(rawData!=null && rawData.trim().length()>0){
             String []commandArray=rawData.split("\\:");
@@ -99,22 +109,26 @@ public class CommandData {
                     setDeviceKey(commandArray[2]);
                 }
                 if(commandArray.length>3){
-                    if(commandArray[3].startsWith("ACK")){
+                    setDeviceType(commandArray[3]);
+                }
+
+                if(commandArray.length>4){
+                    if(commandArray[4].startsWith("ACK")){
                         response=true;
                         error=false;
-                        if(commandArray.length>4){
-                            data=commandArray[4];
+                        if(commandArray.length>5){
+                            data=commandArray[5];
                         }
-                    }else if(commandArray[3].startsWith("NACK")){
+                    }else if(commandArray[4].startsWith("NACK")){
                         response=true;
                         error=true;
-                        if(commandArray.length>4){
-                            data=commandArray[4];
+                        if(commandArray.length>5){
+                            data=commandArray[5];
                         }
                     }else{
                         response=false;
                         error=false;
-                        data=commandArray[3];
+                        data=commandArray[4];
                     }
                 }
             }

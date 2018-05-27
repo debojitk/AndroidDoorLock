@@ -6,12 +6,7 @@ package com.test.arduinosocket.network;
 
 import android.app.Activity;
 import android.content.Context;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.net.Uri;
-import android.net.wifi.WifiInfo;
+
 import android.net.wifi.WifiManager;
 import android.util.Log;
 
@@ -19,7 +14,6 @@ import com.test.arduinosocket.activity.AsyncListenActivity;
 import com.test.arduinosocket.activity.LockManagementActivity;
 import com.test.arduinosocket.common.Constants;
 import com.test.arduinosocket.MyApplication;
-import com.test.arduinosocket.activity.RecorderActivity;
 import com.test.arduinosocket.common.Utils;
 import com.test.arduinosocket.core.CommandData;
 import com.test.arduinosocket.core.Device;
@@ -32,6 +26,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 
 public class UDPBroadcastCommandProcessor implements Runnable {
 
@@ -45,8 +40,9 @@ public class UDPBroadcastCommandProcessor implements Runnable {
     private boolean running = false;
     private Context context;
     private DeviceManager deviceManager;
-
+    private String sessionId;
     private static UDPBroadcastCommandProcessor server;
+    private Thread startedThread;
 
     public static synchronized UDPBroadcastCommandProcessor getInstance() {
         if (server == null) {
@@ -60,6 +56,9 @@ public class UDPBroadcastCommandProcessor implements Runnable {
     }
 
     private UDPBroadcastCommandProcessor() {
+        init();
+    }
+    private void init(){
         try {
             myIp = Utils.getIPAddress(true);
             socket = new DatagramSocket(null);
@@ -67,11 +66,44 @@ public class UDPBroadcastCommandProcessor implements Runnable {
             socket.setBroadcast(true);
             socket.bind(new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 8888));
             socket.setSoTimeout(2000);
+            sessionId=String.valueOf(System.currentTimeMillis());
         } catch (Exception ex) {
             ex.printStackTrace();
-            Log.e(Constants.LOG_TAG_MESSAGE, ex.getMessage());
+            Log.e(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, ex.getMessage());
         }
-
+    }
+    public synchronized void startService(){
+        if(startedThread==null || startedThread.getState()!=Thread.State.RUNNABLE) {
+            init();
+            running=true;
+            wifiTurnedOn=true;
+            startedThread = new Thread(this);
+            startedThread.start();
+        }
+    }
+    public void dispose() {
+        //disableSocketTimeout();
+        Log.d(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "Disposing me-" + startedThread);
+        this.setWifiTurnedOn(false);
+        this.setRunning(false);
+        while(startedThread!=null && startedThread.getState()!= Thread.State.TERMINATED){
+            try {
+                this.socket.close();
+                Log.d(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "socket is " + socket + " Closed=" + socket.isClosed() + " Connected=" + socket.isConnected());
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        if(this.socket!=null){
+            try{
+                this.socket.close();
+            }catch(Exception ex){
+                Log.e(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "An error occured while closing socket", ex);
+            }
+        }
+        //this.socket=null;
+        //server = null;
     }
 
 
@@ -98,7 +130,7 @@ public class UDPBroadcastCommandProcessor implements Runnable {
             try {
                 socket.setSoTimeout(3000);
             } catch (SocketException e) {
-                Log.e("MSG", "An error occurred");
+                Log.e(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "An error occurred");
             }
         }
     }
@@ -108,7 +140,7 @@ public class UDPBroadcastCommandProcessor implements Runnable {
             try {
                 socket.setSoTimeout(0);
             } catch (SocketException e) {
-                Log.e("MSG", "An error occurred");
+                Log.e(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "An error occurred");
             }
         }
 
@@ -123,74 +155,89 @@ public class UDPBroadcastCommandProcessor implements Runnable {
         this.running = running;
     }
 
+    public void searchActiveDevices(long timeout) throws UnknownHostException{
+        if(wifiTurnedOn) {
+            long startTime = System.currentTimeMillis();
+            boolean connected = false;
+            String msg = "Searching for device..";
+            WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+            if(wifiManager==null){
+                return;
+            }
+            WifiManager.WifiLock wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, Constants.LOG_TAG_SERVICE);
+            wifiLock.acquire();
+            Log.d(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "Acquiring wifi_full lock");
+            while ((System.currentTimeMillis() <= startTime + timeout) && running) {
+                //1. broadcasting presence
+                byte[] sendData = (new CommandData().setCommand(Constants.UDP_CONN_BC_REQUEST_PHONE)
+                        .setDeviceId(this.deviceManager.getPhoneId())
+                        .setDeviceKey(this.deviceManager.getPhoneKey())
+                        .setData(sessionId)
+                        .buildCommandString()).getBytes();
+
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,
+                        InetAddress.getByName("255.255.255.255"), 6666);
+                try {
+                    socket.send(sendPacket);
+                } catch (Exception ex) {
+                    Utils.showMessage("Please turn on Wifi");
+                    //ex.printStackTrace();
+                }
+                msg += ".";
+                while (System.currentTimeMillis() <= startTime + timeout && running) {
+                    Utils.showMessage(msg);
+                    try {
+                        byte[] recvBuf = new byte[1024];
+                        packet = new DatagramPacket(recvBuf, recvBuf.length);
+                        socket.receive(packet);
+                        processReceivedMessage(packet);
+                    } catch (SocketTimeoutException ex) {
+                        Log.e(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "SocketTimeoutException occurred for socket is " +
+                                socket + " Closed=" + socket.isClosed() + " Connected=" + socket.isConnected());
+                        break;
+                    } catch (Exception ex) {
+                        Log.e(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "SocketException occurred for socket is " +
+                                socket + " Closed=" + socket.isClosed() + " Connected=" + socket.isConnected(), ex);
+                        running = false;
+                        break;
+                    }
+                }
+            }
+            Log.d(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "Releasing wifi_full lock");
+            wifiLock.release();
+        }
+    }
 
     @Override
     public void run() {
         // TODO Auto-generated method stub
         try {
             //Keep a socket open to listen to all the UDP trafic that is destined for this port
-            long timeout = 15000;
-            boolean connected = false;
-            int retryCount = 3;
-            String msg = "Searching for device..";
             if (!running) {
-                Log.d(Constants.LOG_TAG_MESSAGE, "Thread is not in running state");
+                Log.d(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "Thread is not in running state");
                 return;
             }
-            long startTime = System.currentTimeMillis();
             if (wifiTurnedOn) {
-                while ((System.currentTimeMillis() <= startTime + timeout) && running) {
-                    //1. broadcasting presence
-                    byte[] sendData = (new CommandData().setCommand(Constants.UDP_CONNECT_BC_REQUEST)
-                            .setDeviceId(this.deviceManager.getPhoneId())
-                            .setDeviceKey(this.deviceManager.getPhoneKey()).buildCommandString()).getBytes();
-
-                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,
-                            InetAddress.getByName("255.255.255.255"), 6666);
-                    try {
-                        socket.send(sendPacket);
-                    } catch (Exception ex) {
-                        Utils.showMessage("Please turn on Wifi");
-                        //ex.printStackTrace();
-                    }
-                    msg += ".";
-                    while (System.currentTimeMillis() <= startTime + timeout && running) {
-                        Utils.showMessage(msg);
-                        try {
-                            byte[] recvBuf = new byte[1024];
-                            packet = new DatagramPacket(recvBuf, recvBuf.length);
-                            socket.receive(packet);
-                            processReceivedMessage(packet);
-                        } catch (SocketTimeoutException ex) {
-                            Log.d("MSG", "DEBUG socket disconnected");
-                            Log.e("MSG", "socket disconnected");
-                            break;
-                        }
-                    }
-                }
+                searchActiveDevices(15000);
             } else {
                 if (!wifiTurnedOn) {
-                    Log.d(Constants.LOG_TAG_MESSAGE, "wifi not turned on");
+                    Log.d(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "wifi not turned on");
                 }
                 if (!running) {
-                    Log.d(Constants.LOG_TAG_MESSAGE, "Thread is not in running state");
+                    Log.d(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "Thread is not in running state");
                 }
             }
-            socket.setSoTimeout(50000);//disabling timeout
-            if (!connected) {
+            if(socket!=null && !socket.isClosed()) {
+                socket.setSoTimeout(0);//disabling timeout
+            }
+            if(deviceManager.getLiveDeviceCount()==0) {
                 Utils.showMessage("No Responding device found, when it would be online connection will be automatically made!");
-                activity = MyApplication.getCurrentActivity();
-
-                if (activity != null && activity instanceof AsyncListenActivity) {
-                    AsyncListenActivity asyncListenActivity = (AsyncListenActivity) activity;
-                    Log.d(Constants.LOG_TAG_MESSAGE, "Service not connected, so setting remotesocket as null");
-                }
+            }else{
+                Utils.showMessage("Live device count: " + deviceManager.getLiveDeviceCount());
             }
             //receiving broadcast here
             while (wifiTurnedOn && running) {
                 try {
-                    System.out.print(">");
-
                     //Receive a packet
                     recvBuf = new byte[1024];
                     packet = new DatagramPacket(recvBuf, recvBuf.length);
@@ -199,17 +246,20 @@ public class UDPBroadcastCommandProcessor implements Runnable {
                     //it should process connect, pair, and notify
                     processReceivedMessage(packet);
                 } catch (SocketTimeoutException ex) {
-                    Log.e(Constants.LOG_TAG_SERVICE, "socket timed out");
+                    Log.e(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "SocketTimeoutException occurred for socket is " + socket);
                 } catch (IllegalArgumentException ex) {
-                    Log.e(Constants.LOG_TAG_MESSAGE, "An error occured but recovered: ", ex);
+                    Log.e(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "An error occured but recovered: ", ex);
                     Utils.showMessage("Please stop and start wifi connection");
+                }catch(Exception ex){
+                    Log.e(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "SocketTimeoutException occurred for socket is " + socket, ex);
+                    break;
                 }
             }
             running = false;
         } catch (IOException ex) {
-            Log.e(Constants.LOG_TAG_MESSAGE, "An error occurred, exiting thread", ex);
+            Log.e(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "An error occurred, exiting thread", ex);
         } finally {
-            Log.d(Constants.LOG_TAG_MESSAGE, "exiting thread");
+            Log.d(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "exiting thread");
         }
     }
 
@@ -218,55 +268,61 @@ public class UDPBroadcastCommandProcessor implements Runnable {
             //See if the packet holds the right command (message)
             String responseMessage = null;
             String requestMessage = new String(packet.getData()).trim();
-            Log.d("MSG", "message is: " + requestMessage);
+            Log.d(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "message is: " + requestMessage);
             CommandData commandData = new CommandData(requestMessage);
+            if(commandData.getCommand()==null) return;
             //Utils.showMessage("Received message:" + requestMessage);
             //setRemoteSocket(new InetSocketAddress (((InetSocketAddress)packet.getSocketAddress()).getAddress(),((InetSocketAddress)packet.getSocketAddress()).getPort()));
             /**
              * Connection handling
-             * 1. If device sends UDP_CONN_BC_REQUEST
+             * 1. If device sends UDP_CONN_BC_REQUEST_DEVICE
              *      then its a device initiated request, and connection established in two step handshaking
-             *      phone sends UDP_CONN_BC_RESPONSE
+             *      phone sends UDP_CONN_BC_RESPONSE_DEVICE
              *      device starts web socket connection
              *      phone receives new web socket connection request
              *      Connection gets established.
-             * 2. If phone sends UDP_CONN_BC_REQUEST
+             * 2. If phone sends UDP_CONN_BC_REQUEST_PHONE
              *      then its a phone initiated request, and connection established in three step handshaking
-             *      device sends UDP_CONN_BC_RESPONSE
-             *      phone responds back with UDP_CONN_BC_RESPONSE:ACK
+             *      device sends UDP_CONN_BC_RESPONSE_PHONE
+             *      phone responds back with UDP_CONN_BC_RESPONSE_PHONE:ACK
              *      device starts web socket connection
              *      phone receives new web socket connection request
              *      Connection gets established.
              */
-            if (commandData.getCommand().equals(Constants.UDP_CONNECT_BC_REQUEST)) {
+            if (commandData.getCommand().equals(Constants.UDP_CONN_BC_REQUEST_DEVICE)) {
                 //message initiated from device
-                if (this.deviceManager.checkPairedDevice(commandData.getDeviceId(), commandData.getDeviceKey())) {
+                if (this.deviceManager.checkPairedDevice(commandData.getDeviceId(), commandData.getDeviceKey())
+                        && (this.deviceManager.getDevice(commandData.getDeviceId())==null)
+                        && this.deviceManager.getConnectingDevice(commandData.getDeviceId())==null){
                     //device is paired, so it can be connected, send the success response
-                    Utils.showMessage("Incoming Request. Connected to " + remoteSocket + " from this IP: " + myIp);
-                    responseMessage = new CommandData().setCommand(Constants.UDP_CONNECT_BC_RESPONSE)
+                    Utils.showMessage("Incoming Request from this IP: " + myIp);
+                    responseMessage = new CommandData().setCommand(Constants.UDP_CONN_BC_RESPONSE_DEVICE)
                             .setDeviceId(this.deviceManager.getPhoneId())
-                            .setDeviceKey(this.deviceManager.getPhoneKey()).buildCommandString();
+                            .setDeviceKey(this.deviceManager.getPhoneKey())
+                            .setData(sessionId)
+                            .buildCommandString();
 
                     //add a new device
-                    this.deviceManager.addToConnectingDeviceList(new Device(commandData.getDeviceId(), commandData.getDeviceKey(), packet.getAddress(), packet.getPort()));
+                    this.deviceManager.addToConnectingDeviceList(new Device(commandData.getDeviceId(), commandData.getDeviceKey(),
+                            packet.getAddress(), packet.getPort(), commandData.getDeviceType()));
                 }
-            } else if (commandData.getCommand().equals(Constants.UDP_CONNECT_BC_RESPONSE)) {
+            } else if (commandData.getCommand().equals(Constants.UDP_CONN_BC_RESPONSE_PHONE)) {
                 //message initiated from phone
                 Utils.showMessage("Connected to " + remoteSocket);
                 if (this.deviceManager.checkPairedDevice(commandData.getDeviceId(), commandData.getDeviceKey())) {
                     //add a new device if already  not added
-                    responseMessage = new CommandData().setCommand(Constants.UDP_CONNECT_BC_RESPONSE)
+                    responseMessage = new CommandData().setCommand(Constants.UDP_CONN_BC_RESPONSE_PHONE)
                             .setDeviceId(this.deviceManager.getPhoneId())
                             .setDeviceKey(this.deviceManager.getPhoneKey())
-                            .setData(commandData.getDeviceId())
+                            .setData(sessionId)
                             .setResponse(true)
                             .buildCommandString();
 
                     //add a new device
                     this.deviceManager.addToConnectingDeviceList(new Device(commandData.getDeviceId(),
-                            commandData.getDeviceKey(), packet.getAddress(), packet.getPort()));
+                            commandData.getDeviceKey(), packet.getAddress(), packet.getPort(), commandData.getDeviceType()));
                 } else {
-                    responseMessage = new CommandData().setCommand(Constants.UDP_CONNECT_BC_RESPONSE)
+                    responseMessage = new CommandData().setCommand(Constants.UDP_CONN_BC_RESPONSE_PHONE)
                             .setDeviceId(this.deviceManager.getPhoneId())
                             .setDeviceKey(this.deviceManager.getPhoneKey())
                             .setResponse(true)
@@ -296,10 +352,10 @@ public class UDPBroadcastCommandProcessor implements Runnable {
 
     public void processPairing(DatagramPacket packet, CommandData commandData) {
         /**
-         * 1. Request from device: UDP_PAIR_BROADCAST:deviceid:devicekeyChallenge
+         * 1. Request from device: UDP_PAIR_BROADCAST:deviceid:devicekeyChallenge:deviceType
          * 2. Response from phone: UDP_PAIR_BROADCAST:phoneid:phonekey:ACK:devicekeyChallenge
          * 3. if device accepts it it sends:
-         *      UDP_PAIR_BROADCAST_ACCEPT:deviceid:devicekey
+         *      UDP_PAIR_BROADCAST_ACCEPT:deviceid:devicekey:deviceType
          *      In response phone sends
          *      UDP_PAIR_BROADCAST_ACCEPT:phoneid:phonekey:ACK:devicekey
          * 4. if device rejects it sends
@@ -316,7 +372,7 @@ public class UDPBroadcastCommandProcessor implements Runnable {
                         InetAddress remoteIp = ((InetSocketAddress) packet.getSocketAddress()).getAddress();
                         int remotePort = ((InetSocketAddress) packet.getSocketAddress()).getPort();
 
-                        final Device tempPairingDevice = new Device(commandData.getDeviceId(), commandData.getDeviceKey(), remoteIp, remotePort);//here the key is the challenge key
+                        final Device tempPairingDevice = new Device(commandData.getDeviceId(), commandData.getDeviceKey(), remoteIp, remotePort, commandData.getDeviceType());//here the key is the challenge key
                         tempPairingDevice.setDeviceKey(commandData.getDeviceKey());
                         deviceManager.getTempPairingDeviceMap().put(tempPairingDevice.getDeviceId(), tempPairingDevice);
                         lockManagementActivity.runOnUiThread(new Runnable() {
@@ -337,7 +393,7 @@ public class UDPBroadcastCommandProcessor implements Runnable {
                         tempPairingDevice.setDeviceKey(commandData.getDeviceKey());
                         deviceManager.persistNewlyAddedDevice(tempPairingDevice);
                         this.deviceManager.addToConnectingDeviceList(new Device(commandData.getDeviceId(),
-                                commandData.getDeviceKey(), packet.getAddress(), packet.getPort()));
+                                commandData.getDeviceKey(), packet.getAddress(), packet.getPort(), commandData.getDeviceType()));
                         //update views
                         lockManagementActivity.runOnUiThread(new Runnable() {
                             @Override
@@ -380,7 +436,7 @@ public class UDPBroadcastCommandProcessor implements Runnable {
             }
 
         }
-        Log.d(Constants.LOG_TAG_SERVICE, "processPairing() completed.");
+        Log.d(Constants.LOG_TAG_SERVICE_UDP_PROCESOR, "processPairing() completed.");
     }
 
     public DatagramPacket getPacket() {
@@ -404,11 +460,5 @@ public class UDPBroadcastCommandProcessor implements Runnable {
         return retVal;
     }
 
-    public void stop() {
-        this.setRunning(false);
-        if (this.socket != null && !this.socket.isClosed()) {
-            this.socket.close();
-        }
-        server = null;
-    }
+
 }

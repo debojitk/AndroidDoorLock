@@ -73,7 +73,6 @@ public class NotificationEventHandler extends Service {
 
     @Override
     public void onDestroy() {
-        server.stop();
         super.onDestroy();
         Utils.showMessage("Notification Service Destroyed");
         Utils.createNotification(Constants.WIFI_STOPPED_NOTIFICATION_ID, "Service stopped, please turn on Wifi", getBaseContext(), false);

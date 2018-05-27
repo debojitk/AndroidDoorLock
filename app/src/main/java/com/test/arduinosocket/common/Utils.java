@@ -9,8 +9,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.RingtoneManager;
-import android.os.Build;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -185,20 +183,20 @@ public class Utils {
 
         Intent myIntent = new Intent(context, AsyncListenActivity.class);
         myIntent.setAction("YES_ACTION");
-        myIntent.putExtra(Constants.CALL_NOTIFICATION_CLIENT, Constants.YES_RESPONSE);
+        myIntent.putExtra(Constants.LOCAL_BC_EVENT_DATA, Constants.YES_RESPONSE);
         myIntent.putExtra("DEVICE_ID", deviceId);
         PendingIntent pendingIntent = PendingIntent.getActivity(context,0,myIntent, FILL_IN_ACTION);
 
         Intent yesReceive = new Intent(context, AsyncListenActivity.class);
         yesReceive.setAction("YES_ACTION");
-        yesReceive.putExtra(Constants.CALL_NOTIFICATION_CLIENT, Constants.YES_RESPONSE);
+        yesReceive.putExtra(Constants.LOCAL_BC_EVENT_DATA, Constants.YES_RESPONSE);
         yesReceive.putExtra("DEVICE_ID", deviceId);
         PendingIntent pendingIntentYes = PendingIntent.getActivity(context, 1, yesReceive, PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Action yesAction = new Notification.Action.Builder(R.drawable.ic_action_done, "Yes", pendingIntentYes).build();
 
         Intent noReceive = new Intent(context, AsyncListenActivity.class);
         noReceive.setAction("NO_ACTION");
-        noReceive.putExtra(Constants.CALL_NOTIFICATION_CLIENT, Constants.NO_RESPONSE);
+        noReceive.putExtra(Constants.LOCAL_BC_EVENT_DATA, Constants.NO_RESPONSE);
         noReceive.putExtra("DEVICE_ID", deviceId);
         PendingIntent pendingIntentNo = PendingIntent.getActivity(context, 1, noReceive, PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Action noAction = new Notification.Action.Builder(R.drawable.ic_action_highlight_remove, "No", pendingIntentNo).build();
@@ -241,32 +239,33 @@ public class Utils {
     private static Toast prevToast=null;
     private static Activity runningActivity=null;
     public static void showMessage(final String text){
-        Log.i(Constants.LOG_TAG_TOAST,text);
-        try {
-            runningActivity= MyApplication.getCurrentActivity();
-            if (runningActivity != null) {
-                if (prevToast != null) {
+        if(text!=null) {
+            Log.i(Constants.LOG_TAG_TOAST, text);
+            try {
+                runningActivity = MyApplication.getCurrentActivity();
+                if (runningActivity != null) {
+                    if (prevToast != null) {
+                        runningActivity.runOnUiThread(new Runnable() {
+                            public void run() {
+                                prevToast.cancel();
+                            }
+                        });
+                    }
                     runningActivity.runOnUiThread(new Runnable() {
                         public void run() {
-                            prevToast.cancel();
+                            try {
+                                prevToast = Toast.makeText(runningActivity.getBaseContext(), text, Toast.LENGTH_LONG);
+                                prevToast.show();
+                            } catch (Exception ex) {
+                                //ignore
+                            }
                         }
                     });
                 }
-                runningActivity.runOnUiThread(new Runnable() {
-                    public void run() {
-                        try {
-                            prevToast = Toast.makeText(runningActivity.getBaseContext(), text, Toast.LENGTH_LONG);
-                            prevToast.show();
-                        }catch(Exception ex){
-                            //ignore
-                        }
-                    }
-                });
+            } catch (Exception ex) {
+                //ignore
             }
-        }catch(Exception ex){
-            //ignore
         }
-
     }
     public static String serialize(Object object){
         Gson gson=new Gson();

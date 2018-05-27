@@ -293,7 +293,15 @@ public class TCPIPAudioController extends AsyncTask<Void, String, Void> {
 
                             if (bufferSize != AudioRecord.ERROR_BAD_VALUE) {
                                 // check if we can instantiate and have a success
-                                AudioRecord recorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, rate, channelConfig, audioFormat, bufferSize);
+                                int mode=MediaRecorder.AudioSource.DEFAULT;
+                                if(send&&!receive){
+                                    //recording audio so max mic volume
+                                    mode=MediaRecorder.AudioSource.DEFAULT;
+                                }else if(send && receive){
+                                    //use VOIP settings
+                                    mode=MediaRecorder.AudioSource.VOICE_RECOGNITION;
+                                }
+                                AudioRecord recorder = new AudioRecord(mode, rate, channelConfig, audioFormat, bufferSize);
 
                                 if (recorder.getState() == AudioRecord.STATE_INITIALIZED) {
                                     this.bufferSize=bufferSize;

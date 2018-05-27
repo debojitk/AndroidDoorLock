@@ -1,13 +1,19 @@
 package com.test.arduinosocket.activity;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Spinner;
 
+import com.test.arduinosocket.MyApplication;
 import com.test.arduinosocket.R;
 import com.test.arduinosocket.common.Constants;
 import com.test.arduinosocket.common.Utils;
@@ -25,6 +31,25 @@ public class RecorderActivity extends AppCompatActivity implements CommandRespon
     private boolean isRecording=false;
     private TCPIPAudioController tcpipAudioController;
     private DeviceManager deviceManager;
+    private CommandData commandData;
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Get extra data included in the Intent
+            String message = intent.getStringExtra(Constants.LOCAL_BC_EVENT_DATA);
+            String action=intent.getAction();
+            if(Constants.LOCAL_BC_EVENT_PLAYBACK_STOPPED.equals(action)){
+                notifyActivityOnStopPlayback();
+            }else if(Constants.LOCAL_BC_EVENT_RECORDING_STOPPED.equals(action)){
+                notifyActivityOnStopRecord();
+            }else if(Constants.LOCAL_BC_EVENT_RESTORE_COMPLETED.equals(action)){
+                //restore completed
+            }
+            Log.d("receiver", "Got message: " + message);
+        }
+    };
+
+
     @Override
     public void handleResponse(CommandData response, Device device) {
         if(response.isResponse()){
@@ -45,6 +70,22 @@ public class RecorderActivity extends AppCompatActivity implements CommandRespon
         if(response.isError()){
             Utils.showMessage(response.getData());
         }
+    }
+
+    @Override
+    protected void onStart() {
+        //registering async callbacks
+        super.onStart();
+        IntentFilter intentFilter=new IntentFilter(Constants.LOCAL_BC_EVENT_PLAYBACK_STOPPED);
+        intentFilter.addAction(Constants.LOCAL_BC_EVENT_RECORDING_STOPPED);
+        intentFilter.addAction(Constants.LOCAL_BC_EVENT_RESTORE_COMPLETED);
+        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,intentFilter);
+    }
+
+    @Override
+    protected void onStop() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
+        super.onStop();
     }
 
     @Override

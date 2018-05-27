@@ -104,12 +104,11 @@ public class AsyncListenActivity extends AppCompatActivity
         }
     };
 
-
     private ServiceConnection mConnection = new ServiceConnection() {
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            Utils.showMessage("Service is disconnected");
+            //Utils.showMessage("Service is disconnected");
             mBounded = false;
             serviceInstance = null;
             updateDisplayState();
@@ -118,7 +117,7 @@ public class AsyncListenActivity extends AppCompatActivity
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.d(Constants.LOG_TAG_MESSAGE, "onServiceConnected called");
-            Utils.showMessage("Service is connected");
+            //Utils.showMessage("Service is connected");
             mBounded = true;
             NotificationEventHandler.LocalBinder mLocalBinder = (NotificationEventHandler.LocalBinder) service;
             serviceInstance = mLocalBinder.getServiceInstance();
@@ -276,14 +275,14 @@ public class AsyncListenActivity extends AppCompatActivity
         Intent mIntent = new Intent(getBaseContext(), NotificationEventHandler.class);
         bindService(mIntent, mConnection, 0);
 
-        String intentExtra = getIntent().getStringExtra(Constants.CALL_NOTIFICATION_CLIENT);
+        String intentExtra = getIntent().getStringExtra(Constants.LOCAL_BC_EVENT_DATA);
         String deviceId=getIntent().getStringExtra("DEVICE_ID");
         if(deviceId!=null) {
             if (Constants.YES_RESPONSE.equals(intentExtra)) {
                 Log.d(Constants.LOG_TAG_MESSAGE, "yes response intent received");
                 sendNotifyResponse(true, deviceId);
                 deviceManager.setCurrentDevice(deviceManager.getDevice(deviceId));
-                buttonImageViewConnect.performClick();
+                //buttonImageViewConnect.performClick();
 
             } else if (Constants.NO_RESPONSE.equals(intentExtra)) {
                 Log.d(Constants.LOG_TAG_MESSAGE, "no response intent received");
@@ -299,7 +298,8 @@ public class AsyncListenActivity extends AppCompatActivity
                 new IntentFilter(Constants.LOCAL_BC_EVENT_ACTIVE_DEVICE_CHANGED));
         LocalBroadcastManager.getInstance(this).registerReceiver(mNotifyMessageReceiver,
                 new IntentFilter(Constants.LOCAL_BC_EVENT_ACTIVE_DEVICE_CHANGED));
-
+        LocalBroadcastManager.getInstance(this).registerReceiver(mActiveDeviceChangedReceiver,
+                new IntentFilter(Constants.LOCAL_BC_EVENT_LOCK_DEVICE_CHANGED));
         //initial rendering
         updateDisplayState();
     }
@@ -330,52 +330,63 @@ public class AsyncListenActivity extends AppCompatActivity
         if(deviceManager!=null) {
             Device device = deviceManager.getCurrentDevice();
             if (device != null) {
-                setAllButtonsState(true);
+                setCommButtonsState(true);
                 setServerInfo(device.getDeviceId() + "-" + device.getDeviceIp() + ":" + device.getDevicePort());
+                if(deviceManager.getDevice(device.getLinkDevice())!=null){
+                    setLockButtonState(true);
+                }else{
+                    setLockButtonState(false);
+                }
             } else {
-                setAllButtonsState(false);
-                setServerInfo("No locks connected.");
+                setCommButtonsState(false);
+                setLockButtonState(false);
+                setServerInfo("No Device connected.");
             }
             setSSID(deviceManager.getSSid());
             setServerAddress(deviceManager.getIP());
         }
     }
 
-    public synchronized void setAllButtonsState(final boolean enable) {
-        Log.d(Constants.LOG_TAG_MESSAGE,"setAllButtonsState called: "+enable);
+    public synchronized void setCommButtonsState(final boolean enable) {
+        Log.d(Constants.LOG_TAG_MESSAGE,"setCommButtonsState called: "+enable);
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!enable) {
+                    buttonImageViewConnect.setImageResource(R.drawable.mic_grey);
+                    buttonImageViewDisconnect.setImageResource(R.drawable.mic_grey_cross);
+                    buttonImageViewHello.setImageResource(R.drawable.electronic_lock_grey);
+                    buttonImageViewReset.setColorFilter(Color.rgb(83, 81, 81), PorterDuff.Mode.SRC_ATOP);
+                } else {
+                    buttonImageViewConnect.setImageResource(R.drawable.mic_green);
+                    buttonImageViewDisconnect.setImageResource(R.drawable.mic_red);
+                    buttonImageViewHello.setImageResource(R.drawable.electronic_lock);
+                    buttonImageViewReset.setColorFilter(Color.rgb(6, 178, 10), PorterDuff.Mode.SRC_ATOP);
+                }
+                buttonImageViewConnect.setEnabled(enable);
+                buttonImageViewDisconnect.setEnabled(enable);
+                buttonImageViewHello.setEnabled(enable);
+                buttonImageViewReset.setEnabled(enable);
+            }
+        });
+
+    }
+
+    public synchronized void setLockButtonState(final boolean enable) {
+        Log.d(Constants.LOG_TAG_MESSAGE,"setLockButtonState called: "+enable);
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (!enable) {
                     buttonImageViewLocker.setImageResource(R.drawable.lock_sleek_disabled);
-                    buttonImageViewConnect.setImageResource(R.drawable.mic_grey);
-                    buttonImageViewDisconnect.setImageResource(R.drawable.mic_grey_cross);
-                    buttonImageViewHello.setImageResource(R.drawable.electronic_lock_grey);
-                    buttonImageViewReset.setColorFilter(Color.rgb(83, 81, 81), PorterDuff.Mode.SRC_ATOP);
                 } else {
                     if (imageButtonLockPressed) {
                         buttonImageViewLocker.setImageResource(R.drawable.lock_sleek_on);
                     } else {
                         buttonImageViewLocker.setImageResource(R.drawable.lock_sleek_red);
                     }
-                    buttonImageViewConnect.setImageResource(R.drawable.mic_green);
-                    buttonImageViewDisconnect.setImageResource(R.drawable.mic_red);
-                    buttonImageViewHello.setImageResource(R.drawable.electronic_lock);
-                    buttonImageViewReset.setColorFilter(Color.rgb(6, 178, 10), PorterDuff.Mode.SRC_ATOP);
                 }
                 buttonImageViewLocker.setEnabled(enable);
-                buttonImageViewConnect.setEnabled(enable);
-                buttonImageViewDisconnect.setEnabled(enable);
-                buttonImageViewHello.setEnabled(enable);
-                buttonImageViewReset.setEnabled(enable);
-
-//                buttonConnect.setEnabled(enable);
-//                buttonSayHello.setEnabled(enable);
-//                buttonDiscon.setEnabled(enable);
-//                buttonOpenDoor.setEnabled(enable);
-//                buttonCloseDoor.setEnabled(enable);
-//                buttonStartService.setEnabled(enable);
-//                buttonStopService.setEnabled(enable);
             }
         });
 
@@ -419,6 +430,8 @@ public class AsyncListenActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        setCommButtonsState(false);
+        setLockButtonState(false);
 
         //set the ontouch listener
         buttonImageViewLocker.setOnTouchListener(new View.OnTouchListener() {
@@ -587,11 +600,9 @@ public class AsyncListenActivity extends AppCompatActivity
         alertDialog.setPositiveButton("yes",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
-                        /*if (r.isPlaying()) {
-                            r.stop();
-                        }*/
                         sendNotifyResponse(true, deviceId);
-                        buttonImageViewConnect.performClick();
+                        //buttonImageViewConnect.performClick();
+                        deviceManager.resetNotificationProcessing();
                     }
                 });
 
@@ -599,12 +610,8 @@ public class AsyncListenActivity extends AppCompatActivity
         alertDialog.setNegativeButton("no",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
-                        // Write your code here to invoke NO event
-                        /*if (r.isPlaying()) {
-                            r.stop();
-                        }*/
                         dialog.cancel();
-                        //setAllButtonsState(false);
+                        //setCommButtonsState(false);
                         sendNotifyResponse(false, deviceId);
                         deviceManager.resetNotificationProcessing();
                     }
@@ -721,8 +728,8 @@ public class AsyncListenActivity extends AppCompatActivity
     public void sendNotifyResponse(boolean response, final String deviceId){
         CommandData commandData=new CommandData();
         final String notifyCommand=commandData.setCommand(Constants.NOTIFY)
-                .setDeviceId(deviceManager.getCurrentDevice().getDeviceId())
-                .setDeviceKey(deviceManager.getCurrentDevice().getDeviceKey())
+                .setDeviceId(deviceManager.getPhoneId())
+                .setDeviceKey(deviceManager.getPhoneKey())
                 .setResponse(true)
                 .setError(!response)
                 .buildCommandString();

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:padding="10dp"
+    android:weightSum="1">
+
+    <TextView
+        android:id="@+id/commDeviceTextView"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left|center_vertical"
+        android:layout_weight="1.03"
+        android:backgroundTint="@color/Header_bg"
+        android:paddingLeft="5px"
+        android:text="TextView"
+        android:textSize="14sp" />
+
+    <RadioButton
+        android:id="@+id/commDeviceRadio"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right|center_vertical"
+        android:gravity="right" />
+</LinearLayout>

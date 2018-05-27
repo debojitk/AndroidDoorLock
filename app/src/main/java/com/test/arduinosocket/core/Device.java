@@ -21,6 +21,8 @@ public class Device implements Serializable{
     private int localHeartbeatPort;
     private transient WebSocket webSocketConnection;
     private boolean defaultDevice;
+    private String deviceType;
+    private String linkDevice;
 
     public boolean isDefaultDevice() {
         return defaultDevice;
@@ -62,10 +64,12 @@ public class Device implements Serializable{
         this.localHeartbeatPort = localHeartbeatPort;
     }
 
-    public Device(String deviceId, String deviceKey, InetAddress deviceIp, int remotePort){
+    public Device(String deviceId, String deviceKey, InetAddress deviceIp, int remotePort, String deviceType){
         this.deviceId=deviceId;
         this.deviceIp=deviceIp;
         this.devicePort=remotePort;
+        this.deviceKey=deviceKey;
+        this.deviceType=deviceType;
     }
 
     public void stop(){
@@ -102,5 +106,21 @@ public class Device implements Serializable{
 
     public void setDeviceIp(InetAddress deviceIp) {
         this.deviceIp = deviceIp;
+    }
+
+    public String getDeviceType() {
+        return deviceType;
+    }
+
+    public void setDeviceType(String deviceType) {
+        this.deviceType = deviceType;
+    }
+
+    public String getLinkDevice() {
+        return linkDevice;
+    }
+
+    public void setLinkDevice(String linkDevice) {
+        this.linkDevice = linkDevice;
     }
 }

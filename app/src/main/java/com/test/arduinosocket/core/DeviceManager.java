@@ -103,10 +103,15 @@ public class DeviceManager implements Runnable{
         }
         return retVal;
     }
-    public Map<String,Device> getAllPairedDevices(){
-        Map<String,?> devicesList=new HashMap<>();
+    public Map<String,Device> getAllPairedDevices(Context context){
+        Map<String,?> devicesList=null;
         Map<String, Device> retVal=new HashMap<>();
-        storedDeviceMap = this.context.getSharedPreferences(
+        if(this.context!=null){
+            context=this.context;
+        }else if(context==null){
+            return retVal;
+        }
+        storedDeviceMap = context.getSharedPreferences(
                 context.getString(R.string.com_app_wifilock_paired_device_info), Context.MODE_PRIVATE);
         devicesList=storedDeviceMap.getAll();
         for(Map.Entry<String, ?> deviceEntry:devicesList.entrySet()){
@@ -148,7 +153,7 @@ public class DeviceManager implements Runnable{
                 //WebSocketImpl.DEBUG=true;
                 this.webSocketServer.start();
             } catch (Exception ex) {
-                Log.e(Constants.LOG_TAG_SERVICE, "An error occurred while starting websocket server", ex);
+                Log.e(Constants.LOG_TAG_SERVICE, "Server already started");
             }
             localThread.start();
             startBroadcastProcessor(context);
@@ -159,24 +164,16 @@ public class DeviceManager implements Runnable{
         }
     }
     public void stop(){
-        this.started=false;
-        try {
-            this.webSocketServer.stop();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        this.broadcastCommandProcessor.stop();
+        this.broadcastCommandProcessor.dispose();
     }
     public void startBroadcastProcessor(Context context){
         if(!broadcastCommandProcessor.isRunning()){
             broadcastCommandProcessor.setRunning(true);
             broadcastCommandProcessor.setWifiTurnedOn(true);
             broadcastCommandProcessor.setContext(context);
-            Thread t=new Thread(broadcastCommandProcessor);
-            t.start();
-            Utils.showMessage("Service started");
+            broadcastCommandProcessor.setDeviceManager(this);
+            broadcastCommandProcessor.startService();
+            Utils.showMessage("UDP processor Service started");
         }else{
             Utils.showMessage("Service already started");
         }
@@ -186,11 +183,11 @@ public class DeviceManager implements Runnable{
 
     }
 
-    public void addDevice(String deviceId, String deviceKey, InetAddress deviceIp, int remotePort){
+    public void addDevice(String deviceId, String deviceKey, InetAddress deviceIp, int remotePort, String deviceType){
         //String key=deviceId+"-"+deviceIp;
         String key=deviceId;
         if(deviceMap.get(key)==null) {
-            Device device = new Device(deviceId, deviceKey, deviceIp, remotePort);
+            Device device = new Device(deviceId, deviceKey, deviceIp, remotePort, deviceType);
             deviceMap.put(key, device);
             if(currentDevice == null) {
                 setCurrentDevice(device);
@@ -202,21 +199,39 @@ public class DeviceManager implements Runnable{
         //String key=device.getDeviceId()+"-"+device.getDeviceIp();
         String key=device.getDeviceId();
         if(deviceMap.get(key)==null) {
+            loadPersistanceData(device);
             deviceMap.put(key, device);
-            if(currentDevice == null) {
+            //COMM device can only be active device, lock devices are slaves
+            if(currentDevice == null && device.getDeviceType().equalsIgnoreCase(Constants.DEVICE_TYPE_COMM)) {
                 setCurrentDevice(device);
+            }else if(device.getDeviceType().equalsIgnoreCase(Constants.DEVICE_TYPE_LOCK)){
+                Intent intent = new Intent(Constants.LOCAL_BC_EVENT_LOCK_DEVICE_CHANGED);
+                intent.putExtra(Constants.INTENT_DEVICE_ID, device!=null?device.getDeviceId():null);
+                intent.putExtra(Constants.INTENT_DEVICE_STATUS, Constants.DEVICE_STATUS_ACTIVE);
+                LocalBroadcastManager.getInstance(this.context).sendBroadcast(intent);
             }
         }
+    }
+
+    /**
+     * This method loads persisted device data and update persisted fields of
+     * active devices
+     * @param device
+     */
+    private void loadPersistanceData(Device device){
+        Map<String, Device> persistedDevices=getAllPairedDevices(context);
+        device.setLinkDevice(persistedDevices.get(device.getDeviceId()).getLinkDevice());
     }
 
     public Device removeDevice(Device device){
         //String key=device.getDeviceId()+"-"+device.getDeviceIp();
         if(device!=null) {
             String key = device.getDeviceId();
-            device = deviceMap.remove(key);
+            device = deviceMap.get(key);
             if(device!=null && device.getWebSocketConnection()!=null && !device.getWebSocketConnection().isClosed()){
                 device.getWebSocketConnection().close();
             }
+            deviceMap.remove(key);
             if (deviceMap.isEmpty()) {
                 setCurrentDevice(null);
             } else {
@@ -227,6 +242,12 @@ public class DeviceManager implements Runnable{
                         break;
                     }
                 }
+            }
+            if(device.getDeviceType().equalsIgnoreCase(Constants.DEVICE_TYPE_LOCK)){
+                Intent intent = new Intent(Constants.LOCAL_BC_EVENT_LOCK_DEVICE_CHANGED);
+                intent.putExtra(Constants.INTENT_DEVICE_ID, device!=null?device.getDeviceId():null);
+                intent.putExtra(Constants.INTENT_DEVICE_STATUS, Constants.DEVICE_STATUS_INACTIVE);
+                LocalBroadcastManager.getInstance(this.context).sendBroadcast(intent);
             }
         }
         return device;
@@ -248,6 +269,7 @@ public class DeviceManager implements Runnable{
     }
     public String getSSid() {
         String retVal = "";
+        if(!started)return retVal;
         ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo wifi = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         if (wifi.isConnectedOrConnecting()) {
@@ -260,6 +282,7 @@ public class DeviceManager implements Runnable{
 
     public String getIP() {
         String retVal = "";
+        if(!started)return retVal;
         ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo wifi = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         if (wifi.isConnectedOrConnecting()) {
@@ -279,7 +302,6 @@ public class DeviceManager implements Runnable{
         Intent intent = new Intent(Constants.LOCAL_BC_EVENT_ACTIVE_DEVICE_CHANGED);
         intent.putExtra(Constants.INTENT_DEVICE_ID, device!=null?device.getDeviceId():null);
         LocalBroadcastManager.getInstance(this.context).sendBroadcast(intent);
-
     }
     public Device getCurrentDevice(){
         return this.currentDevice;
@@ -339,6 +361,28 @@ public class DeviceManager implements Runnable{
             ConnectingDevice connectingDevice = new ConnectingDevice(device);
             connectingDevice.startTimeoutThread(60000);
             tempConnectingDeviceMap.put(device.getDeviceId(), connectingDevice);
+        }
+    }
+
+    public Device getConnectingDevice(String deviceId){
+        Device retVal=null;
+        ConnectingDevice connDevice= tempConnectingDeviceMap.get(deviceId);
+        if(connDevice!=null){
+            retVal=connDevice.getDevice();
+        }
+        return retVal;
+    }
+
+    public void disposeAll(){
+        if(this.started) {
+            Log.d(Constants.LOG_TAG_SERVICE, "disposing all services");
+            this.broadcastCommandProcessor.dispose();
+            removeAllDevices();
+            currentDevice = null;
+            tempConnectingDeviceMap.clear();
+            tempPairingDeviceMap.clear();
+            requestQueue.clear();
+            this.started = false;
         }
     }
 
@@ -469,15 +513,33 @@ public class DeviceManager implements Runnable{
 
                 }else {
                     Intent i = new Intent(this.context, CallNotificationActivity.class);
-                    i.putExtra(Constants.CALL_NOTIFICATION_CLIENT, commandData.buildCommandString());
+                    i.putExtra(Constants.LOCAL_BC_EVENT_DATA, commandData.buildCommandString());
                     i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     this.context.startActivity(i);
                 }
             }
-        }else if(Constants.NOTIFY_COMPLETE.equals(commandData.getCommand())){
+        }else if(Constants.NOTIFY_ACCEPT.equals(commandData.getCommand())){
             if(notificationInProgress){
                 resetNotificationProcessingOnMessage(commandData);
             }
+        }else if(Constants.STOP_PLAY.equals(commandData.getCommand())){
+            Log.d(Constants.LOG_TAG_MESSAGE, "Broadcasting message");
+            Intent intent = new Intent(Constants.LOCAL_BC_EVENT_PLAYBACK_STOPPED);
+            intent.putExtra(Constants.LOCAL_BC_EVENT_DATA, commandData.buildCommandString());
+            LocalBroadcastManager.getInstance(this.context).sendBroadcast(intent);
+
+        }else if(Constants.STOP_RECORD.equals(commandData.getCommand())){
+            Log.d(Constants.LOG_TAG_MESSAGE, "Broadcasting message");
+            Intent intent = new Intent(Constants.LOCAL_BC_EVENT_RECORDING_STOPPED);
+            intent.putExtra(Constants.LOCAL_BC_EVENT_DATA, commandData.buildCommandString());
+            LocalBroadcastManager.getInstance(this.context).sendBroadcast(intent);
+
+        }else if(Constants.RESTORE.equals(commandData.getCommand())){
+            Log.d(Constants.LOG_TAG_MESSAGE, "Broadcasting message");
+            Intent intent = new Intent(Constants.LOCAL_BC_EVENT_RESTORE_COMPLETED);
+            intent.putExtra(Constants.LOCAL_BC_EVENT_DATA, commandData.buildCommandString());
+            LocalBroadcastManager.getInstance(this.context).sendBroadcast(intent);
+
         }
     }
 
@@ -485,7 +547,7 @@ public class DeviceManager implements Runnable{
         this.notificationInProgress=false;
         Log.d(Constants.LOG_TAG_MESSAGE, "Broadcasting message");
         Intent intent = new Intent(Constants.LOCAL_BC_EVENT_NOTIFICATION);
-        intent.putExtra(Constants.CALL_NOTIFICATION_CLIENT, commandData.buildCommandString());
+        intent.putExtra(Constants.LOCAL_BC_EVENT_DATA, commandData.buildCommandString());
         LocalBroadcastManager.getInstance(this.context).sendBroadcast(intent);
         //if any notification is running remove that notification
         Utils.removeNotification(Constants.DEVICE_REQUEST_NOTIFICATION_ID, this.context);
