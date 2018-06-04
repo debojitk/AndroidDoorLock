@@ -391,7 +391,7 @@ public class UDPBroadcastCommandProcessor implements Runnable {
                         //remove from temp list
                         final Device tempPairingDevice = deviceManager.getTempPairingDeviceMap().remove(commandData.getDeviceId());
                         tempPairingDevice.setDeviceKey(commandData.getDeviceKey());
-                        deviceManager.persistNewlyAddedDevice(tempPairingDevice);
+                        deviceManager.persistDeviceData(tempPairingDevice);
                         this.deviceManager.addToConnectingDeviceList(new Device(commandData.getDeviceId(),
                                 commandData.getDeviceKey(), packet.getAddress(), packet.getPort(), commandData.getDeviceType()));
                         //update views

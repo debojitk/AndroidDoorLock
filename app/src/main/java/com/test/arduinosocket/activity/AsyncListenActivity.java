@@ -155,7 +155,7 @@ public class AsyncListenActivity extends AppCompatActivity
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            Intent i = new Intent(this, MyPreferencesActivity.class);
+            Intent i = new Intent(this, GeneralPreferencesActivity.class);
             startActivity(i);
             return true;
         }

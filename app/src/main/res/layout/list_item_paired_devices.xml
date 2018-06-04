@@ -69,6 +69,14 @@
         android:layout_weight="0" />
 
     <ImageView
+        android:id="@+id/imageViewSettings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight=".1"
+        android:tint="#3b3b3b"
+        app:srcCompat="@drawable/ic_menu_manage" />
+
+    <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:srcCompat="@drawable/ic_delete_black_24dp"

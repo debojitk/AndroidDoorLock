@@ -6,6 +6,8 @@ import org.java_websocket.WebSocket;
 
 import java.io.Serializable;
 import java.net.InetAddress;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by administrator on 4/20/2017.
@@ -23,6 +25,7 @@ public class Device implements Serializable{
     private boolean defaultDevice;
     private String deviceType;
     private String linkDevice;
+    private Map<String, Object> settings=new HashMap<>();
 
     public boolean isDefaultDevice() {
         return defaultDevice;
@@ -122,5 +125,14 @@ public class Device implements Serializable{
 
     public void setLinkDevice(String linkDevice) {
         this.linkDevice = linkDevice;
+    }
+    public Map<String, Object> getSettingsMap(){
+        if(settings==null){
+            settings=new HashMap<>();
+        }
+        return settings;
+    }
+    public void setSettingsMap(Map<String, Object> settings){
+        this.settings=settings;
     }
 }

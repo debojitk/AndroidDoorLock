@@ -46,7 +46,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".activity.MyPreferencesActivity"
+            android:name=".activity.DevicePreferencesActivity"
+            android:label="Settings"
+            android:theme="@style/AppTheme.ActionBar" />
+        <activity
+            android:name=".activity.GeneralPreferencesActivity"
             android:label="Settings"
             android:theme="@style/AppTheme.ActionBar" />
         <activity

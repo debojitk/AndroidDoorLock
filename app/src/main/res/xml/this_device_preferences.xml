@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference android:title="Device Name"
+        android:key="phoneName"
+        android:summary="Please provide device Name"
+        android:defaultValue="@string/default_phone_name">
+    </EditTextPreference>
+    <EditTextPreference android:title="Device Identifier"
+        android:key="phoneId"
+        android:summary="Please provide device Id (alphanumeric with no spaces)"
+        android:defaultValue="@string/default_phone_id">
+    </EditTextPreference>
+    <EditTextPreference android:title="Device Pairing Key"
+        android:key="phoneKey"
+        android:summary="Please provide device Id (6 digit numeric)"
+        android:maxLength="6"
+        android:defaultValue="232423">
+    </EditTextPreference>
+    <EditTextPreference android:title="Master Pin"
+        android:key="phonePin"
+        android:summary="Please provide Master Pin (4 digit numeric)"
+        android:defaultValue="0000"
+        android:maxLength="4"
+        android:password="true">
+    </EditTextPreference>
+    <CheckBoxPreference android:title="Use Master pin for Unlock"
+        android:key="pinUnlock"
+        android:defaultValue="false"
+        android:summary="If enabled master pin would be asked while Unlocking"></CheckBoxPreference>
+
+    <CheckBoxPreference android:title="Start server on Wifi enabled"
+        android:defaultValue="true"
+        android:summary="This option if selected will start the service as soon as Wifi is active."
+        android:key="serverEnabledOnWifiEnabled" />
+
+</PreferenceScreen>

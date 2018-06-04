@@ -84,7 +84,7 @@ public class DeviceManager implements Runnable{
         return tempPairingDeviceMap;
     }
 
-    public void persistNewlyAddedDevice(Device device){
+    public void persistDeviceData(Device device){
         storedDeviceMap = this.context.getSharedPreferences(
                 context.getString(R.string.com_app_wifilock_paired_device_info), Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = storedDeviceMap.edit();
@@ -557,14 +557,21 @@ public class DeviceManager implements Runnable{
         this.notificationInProgress=false;
     }
 
-    public void sendMessageRequest(String command, String message, CommandResponseHandler responseHandler){
+    public void sendMessageRequest(String command, String message, CommandResponseHandler responseHandler) {
+        sendMessageRequest(null,command, message, responseHandler);
+    }
+    public void sendMessageRequest(String deviceId, String command, String message, CommandResponseHandler responseHandler){
         try{
             requestQueue.add(new CommandHolder(command, message, responseHandler, getCurrentDevice()));
             String inputMessage=command+ Constants.COLON+getPhoneId()+Constants.COLON+getPhoneKey();
             if(message!=null && message.length()>0){
                 inputMessage+=Constants.COLON+message;
             }
-            getCurrentDevice().getWebSocketConnection().send(inputMessage);
+            if(deviceId==null && getCurrentDevice()!=null) {
+                getCurrentDevice().getWebSocketConnection().send(inputMessage);
+            }else if(getDevice(deviceId)!=null){
+                getDevice(deviceId).getWebSocketConnection().send(inputMessage);
+            }
         }catch(Exception ex){
             ex.printStackTrace();
         }

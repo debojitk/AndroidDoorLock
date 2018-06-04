@@ -11,11 +11,6 @@
         android:defaultValue="softap"
         android:entries="@array/listArrayWifiModes"
         android:entryValues="@array/listValuesWifiModes" />
-
-    <CheckBoxPreference android:title="Start server on Wifi enabled"
-        android:defaultValue="true"
-        android:summary="This option if selected will start the service as soon as Wifi is active."
-        android:key="serverEnabledOnWifiEnabled" />
     <ListPreference android:title="Wifi Network"
         android:summary="Select the Wifi network"
         android:key="wifiNetwork"
@@ -25,13 +20,4 @@
     <EditTextPreference android:title="Wifi Password"
         android:key="wifiPassword"
         android:summary="Please provide password for the selected Wifi"></EditTextPreference>
-    <CheckBoxPreference android:title="Enable Not at Home"
-        android:key="notAtHome"
-        android:defaultValue="false"
-        android:summary="Select to enable not at home feature"></CheckBoxPreference>
-    <EditTextPreference android:title="Record file Size"
-        android:key="maxRecLen"
-        android:defaultValue="200"
-        android:summary="Size of recorded Messages in Kbytes"></EditTextPreference>
-
 </PreferenceScreen>

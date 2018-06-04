@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +19,7 @@ import android.widget.RadioButton;
 import android.widget.TextView;
 
 import com.test.arduinosocket.R;
+import com.test.arduinosocket.activity.DevicePreferencesActivity;
 import com.test.arduinosocket.common.Constants;
 import com.test.arduinosocket.core.Device;
 import com.test.arduinosocket.core.DeviceManager;
@@ -59,6 +61,7 @@ public class PairedDeviceListAdapter  extends ArrayAdapter<Device> {
         RadioButton radioButton = (RadioButton)view.findViewById(R.id.radiobutton);
         //radioButton.setChecked(position == selectedPosition);
         radioButton.setTag(position);
+        view.setTag(position);
         radioButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -77,7 +80,18 @@ public class PairedDeviceListAdapter  extends ArrayAdapter<Device> {
             }
         });
 
+        ImageView imgSettingsButton=(ImageView) view.findViewById(R.id.imageViewSettings);
+        imgSettingsButton.setTag(position);
+        imgSettingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(getContext(), DevicePreferencesActivity.class);
+                i.putExtra("deviceId", values.get((Integer)v.getTag()).getDeviceId());
+                getContext().startActivity(i);
+            }
+        });
         LinearLayout layoutRowSelector=(LinearLayout)view.findViewById(R.id.layoutRowSelector);
+        layoutRowSelector.setTag(position);
         Device device=deviceManager.getDevice(values.get(position).getDeviceId());
         if(device!=null){
             LinearLayout layout=(LinearLayout)view.findViewById(R.id.layoutDeviceStatus);
@@ -90,14 +104,6 @@ public class PairedDeviceListAdapter  extends ArrayAdapter<Device> {
             }else{
                 radioButton.setChecked(false);
             }
-            if(device.getDeviceType().equalsIgnoreCase(Constants.DEVICE_TYPE_LOCK)){
-                radioButton.setEnabled(false);
-                radioButton.setChecked(false);
-                layoutRowSelector.setEnabled(false);
-                mainText.append(" (" + Constants.DEVICE_TYPE_LOCK + ")");
-            }else if(device.getDeviceType().equalsIgnoreCase(Constants.DEVICE_TYPE_COMM)){
-                mainText.append(" (" + Constants.DEVICE_TYPE_COMM + ")");
-            }
         }else{
             LinearLayout layout=(LinearLayout)view.findViewById(R.id.layoutDeviceStatus);
             layout.setBackgroundColor(Color.DKGRAY);
@@ -106,6 +112,19 @@ public class PairedDeviceListAdapter  extends ArrayAdapter<Device> {
             radioButton.setEnabled(false);
             radioButton.setChecked(false);
         }
+
+        //fetching data from persisted objects
+        if(values.get(position)!=null) {
+            if (values.get(position).getDeviceType().equalsIgnoreCase(Constants.DEVICE_TYPE_LOCK)) {
+                radioButton.setEnabled(false);
+                radioButton.setChecked(false);
+                layoutRowSelector.setEnabled(false);
+                mainText.append(" (" + Constants.DEVICE_TYPE_LOCK + ")");
+            } else if (values.get(position).getDeviceType().equalsIgnoreCase(Constants.DEVICE_TYPE_COMM)) {
+                mainText.append(" (" + Constants.DEVICE_TYPE_COMM + ")");
+            }
+        }
+
         layoutRowSelector.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
@@ -184,12 +203,12 @@ public class PairedDeviceListAdapter  extends ArrayAdapter<Device> {
                         Device selectedCommDevice = deviceManager.getDevice(commDevice.getDeviceId());
                         if(deviceManager.getDevice(selectedCommDevice.getLinkDevice())!=null){
                             deviceManager.getDevice(selectedCommDevice.getLinkDevice()).setLinkDevice(null);
-                            deviceManager.persistNewlyAddedDevice(deviceManager.getDevice(selectedCommDevice.getLinkDevice()));
+                            deviceManager.persistDeviceData(deviceManager.getDevice(selectedCommDevice.getLinkDevice()));
                         }
                         selectedCommDevice.setLinkDevice(selectedLockDevice.getDeviceId());
                         selectedLockDevice.setLinkDevice(selectedCommDevice.getDeviceId());
-                        deviceManager.persistNewlyAddedDevice(selectedCommDevice);
-                        deviceManager.persistNewlyAddedDevice(selectedLockDevice);
+                        deviceManager.persistDeviceData(selectedCommDevice);
+                        deviceManager.persistDeviceData(selectedLockDevice);
                     }
                     dialog.dismiss();
                 }
